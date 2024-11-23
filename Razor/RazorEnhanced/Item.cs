@@ -2084,13 +2084,17 @@ namespace RazorEnhanced
                             if (content[i].Args == null)  // Props exist but not have value
                                 return 1;
 
-                            try
+                            Regex regex = new Regex(@"\d+$"); // Matches one or more digits (\d) at the end of the string ($)
+                            Match match = regex.Match(content[i].Args);
+                            if (match.Success)
                             {
-                                return Convert.ToSingle(Language.ParsePropsCliloc(content[i].Args), CultureInfo.InvariantCulture);
+                                int number = int.Parse(match.Value);
+                                Utility.Logger.Debug($"Extracted number: {number}");
+                                return number;
                             }
-                            catch
+                            else
                             {
-                                return 1;  // Conversion error
+                                return 1; // conversion error
                             }
 
                         }
