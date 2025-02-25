@@ -160,15 +160,19 @@ jobs:
     - name: Create Tag
       if: ${{ steps.checkTag.outputs.exists }} == false
       run: |
-        # Create the tag locally
-        git tag -a "v${{ steps.get_version.outputs.version }}" -m "RazorEnhanced ${{ steps.get_version.outputs.version }}"
+        # Set git identity
+        git config --global user.name "GitHub Actions Bot"
+        git config --global user.email "actions@github.com"
         
-        # Use GitHub CLI to create tag (requires gh to be installed on runner)
+        # Use GitHub CLI to create tag
         gh auth login --with-token <<< "${{ secrets.DEPLOYMENT_TOKEN }}"
-        gh api --method POST repos/RazorEnhanced/RazorEnhanced/git/refs \
-          -f ref="refs/tags/v${{ steps.get_version.outputs.version }}" \
-          -f sha="$(git rev-parse HEAD)"
-      shell: bash
+        
+        # Get current commit SHA
+        $commitSha = git rev-parse HEAD
+        
+        # Create tag directly via GitHub API
+        gh api --method POST "repos/RazorEnhanced/RazorEnhanced/git/refs" -f "ref=refs/tags/v${{ steps.get_version.outputs.version }}" -f "sha=$commitSha"
+      shell: pwsh
       
 # Clean up old releases to save space
     - name: Clean up old releases
