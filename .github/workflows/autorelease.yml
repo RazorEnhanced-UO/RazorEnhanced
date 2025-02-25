@@ -7,7 +7,7 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-  # Triggers the workflow on push or pull request events but only for the release/0.7 branch
+  # Triggers the workflow on push or pull request events but only for the release/0.8 branch
   push:
     branches: [ release/0.8 ]
   #pull_request:
@@ -18,6 +18,8 @@ env:
   # Path to the solution file relative to the root of the project.
   SOLUTION_FILE_PATH: .
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  # Using the organization-level secret
+  DEPLOYMENT_TOKEN: ${{ secrets.DEPLOYMENT_TOKEN }}
 
   # Configuration type to build.
   # You can convert this to a build matrix if you need coverage of multiple configuration types.
@@ -83,21 +85,62 @@ jobs:
         recursive: true
         dest: RazorEnhanced-${{ steps.get_version.outputs.version }}.zip
 
-    - name: Create Release
+    # Instead of creating a release in the current repo, checkout the GitHub Pages repo
+    - name: Checkout GitHub Pages Repository
       if: ${{ steps.checkTag.outputs.exists }} == false
-      id: create_release
-      uses: actions/create-release@v1
+      uses: actions/checkout@v2
       with:
-        tag_name: "v${{steps.get_version.outputs.version}}"
-        release_name: RazorEnhanced ${{steps.get_version.outputs.version}}
-        draft: false
-        prerelease: false
+        repository: RazorEnhanced/razorenhanced.github.io
+        path: gh-pages
+        token: ${{ secrets.DEPLOYMENT_TOKEN }}
 
-    - name: Deploy        
+    # Create releases directory if it doesn't exist
+    - name: Create releases directory
       if: ${{ steps.checkTag.outputs.exists }} == false
-      uses: actions/upload-release-asset@v1
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-        asset_path: ./RazorEnhanced-${{ steps.get_version.outputs.version }}.zip
-        asset_name: RazorEnhanced-${{ steps.get_version.outputs.version }}.zip
-        asset_content_type: application/zip
+      run: |
+        if (!(Test-Path -Path "gh-pages/releases")) {
+          New-Item -ItemType Directory -Path "gh-pages/releases"
+        }
+      shell: pwsh
+
+    # Copy the zip file to the GitHub Pages repo
+    - name: Copy release package
+      if: ${{ steps.checkTag.outputs.exists }} == false
+      run: |
+        Copy-Item -Path "RazorEnhanced-${{ steps.get_version.outputs.version }}.zip" -Destination "gh-pages/releases/"
+      shell: pwsh
+
+    # Update the latest.json file with version info
+    - name: Update latest.json
+      if: ${{ steps.checkTag.outputs.exists }} == false
+      run: |
+        $latestJson = @{
+          version = "${{ steps.get_version.outputs.version }}"
+          zipUrl = "https://razorenhanced.github.io/releases/RazorEnhanced-${{ steps.get_version.outputs.version }}.zip"
+          releaseDate = (Get-Date -Format "yyyy-MM-dd")
+        } | ConvertTo-Json
+
+        Set-Content -Path "gh-pages/releases/latest.json" -Value $latestJson -Force
+      shell: pwsh
+
+    # Commit and push changes to the GitHub Pages repo
+    - name: Commit and push changes
+      if: ${{ steps.checkTag.outputs.exists }} == false
+      run: |
+        cd gh-pages
+        git config user.name "GitHub Actions Bot"
+        git config user.email "actions@github.com"
+        git add releases/
+        git commit -m "Add release version ${{ steps.get_version.outputs.version }}"
+        git push
+      shell: pwsh
+
+    # Create a tag in the main repository
+    - name: Create Tag
+      if: ${{ steps.checkTag.outputs.exists }} == false
+      run: |
+        git config user.name "GitHub Actions Bot"
+        git config user.email "actions@github.com"
+        git tag -a "v${{ steps.get_version.outputs.version }}" -m "RazorEnhanced ${{ steps.get_version.outputs.version }}"
+        git push origin "v${{ steps.get_version.outputs.version }}"
+      shell: pwsh
