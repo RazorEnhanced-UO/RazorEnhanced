@@ -7,6 +7,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{6DD14A85-CCFC-4774-BD26-0F5772512319}</ProjectGuid>
     <OutputType>Library</OutputType>
+	  <LangVersion>preview</LangVersion>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>FastColoredTextBoxNS</RootNamespace>
     <AssemblyName>FastColoredTextBox</AssemblyName>

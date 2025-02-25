@@ -6,6 +6,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{5D66ACE6-B2A4-400F-B5A5-24525959AC5C}</ProjectGuid>
     <OutputType>Library</OutputType>
+	  <LangVersion>preview</LangVersion>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Ultima</RootNamespace>
     <AssemblyName>Ultima</AssemblyName>

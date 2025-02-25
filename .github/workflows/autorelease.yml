@@ -37,8 +37,21 @@ jobs:
       id: get_version
       shell: powershell
       run: |
-        $version = Select-String -Path Razor/Properties/AssemblyInfo.cs  -Pattern 'AssemblyVersion\(\"([\w.-]+)\"\)' -AllMatches |  %{$_.Matches.Groups[1].Value}
-        echo "::set-output name=version::$version"
+        # Try both patterns - AssemblyVersionAttribute and AssemblyVersion
+        $versionAttribute = Select-String -Path Razor/Properties/AssemblyInfo.cs -Pattern 'AssemblyVersionAttribute\(\"([\w.-]+)\"\)' -AllMatches | %{$_.Matches.Groups[1].Value}
+        $versionLegacy = Select-String -Path Razor/Properties/AssemblyInfo.cs -Pattern 'AssemblyVersion\(\"([\w.-]+)\"\)' -AllMatches | %{$_.Matches.Groups[1].Value}
+        
+        # Use the first pattern found, defaulting to legacy if both are found
+        if ($versionAttribute) {
+          $version = $versionAttribute
+        } elseif ($versionLegacy) {
+          $version = $versionLegacy
+        } else {
+          Write-Error "Could not find version information in AssemblyInfo.cs"
+          exit 1
+        }
+        
+        echo "version=$version" >> $env:GITHUB_OUTPUT
     
     - name: Show Version
       run: echo "${{steps.get_version.outputs.version}}"
