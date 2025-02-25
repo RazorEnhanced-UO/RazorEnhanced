@@ -63,14 +63,15 @@ jobs:
       run: echo "${{steps.get_version.outputs.version}}"
       
     - name: GitHub Tag Exists
-      uses: mukunku/tag-exists-action@v1.0.0
+      uses: mukunku/tag-exists-action@v1.2.0
       id: checkTag
       with: 
         tag: "v${{steps.get_version.outputs.version}}"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
         
-    - run: echo ${{ steps.checkTag.outputs.exists }}
+    - name: Show Tag Existence Result
+      run: echo ${{ steps.checkTag.outputs.exists }}
     
     # build   
     - name: Add MSBuild to PATH
@@ -126,6 +127,7 @@ jobs:
     - name: Copy release package
       if: ${{ steps.checkTag.outputs.exists }} == false
       run: |
+        # Copy versioned zip file
         Copy-Item -Path "RazorEnhanced-${{ steps.get_version.outputs.version }}.zip" -Destination "gh-pages/releases/"
       shell: pwsh
 
@@ -161,5 +163,33 @@ jobs:
         git config user.name "GitHub Actions Bot"
         git config user.email "actions@github.com"
         git tag -a "v${{ steps.get_version.outputs.version }}" -m "RazorEnhanced ${{ steps.get_version.outputs.version }}"
+        
+        # Set remote URL with token for authentication
+        git remote set-url origin https://x-access-token:${{ secrets.DEPLOYMENT_TOKEN }}@github.com/RazorEnhanced/RazorEnhanced.git
+        
+        # Push the tag
         git push origin "v${{ steps.get_version.outputs.version }}"
+      shell: pwsh
+      
+# Clean up old releases to save space
+    - name: Clean up old releases
+      if: ${{ steps.checkTag.outputs.exists }} == false
+      run: |
+        # Navigate to releases directory
+        cd gh-pages/releases
+        
+        # Get all version zip files sorted by last modified date (newest first)
+        $allZips = Get-ChildItem -Filter "RazorEnhanced-*.zip" | 
+                   Sort-Object -Property LastWriteTime -Descending
+        
+        # Keep only the latest 500 versions
+        if ($allZips.Count -gt 500) {
+          Write-Host "Found $($allZips.Count) releases, keeping the 500 most recent ones"
+          foreach ($zip in $allZips[500..($allZips.Count-1)]) {
+            Write-Host "Removing old release: $($zip.Name)"
+            Remove-Item $zip.FullName -Force
+          }
+        } else {
+          Write-Host "Found $($allZips.Count) releases, all will be kept"
+        }
       shell: pwsh
