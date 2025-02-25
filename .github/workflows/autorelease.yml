@@ -156,22 +156,40 @@ jobs:
         git push
       shell: pwsh
 
-# Create a tag in the main repository using GitHub CLI
+# Create a tag using PowerShell and GitHub API
     - name: Create Tag
       if: ${{ steps.checkTag.outputs.exists }} == false
       run: |
-        # Set git identity
+        # Set git identity for local operations
         git config --global user.name "GitHub Actions Bot"
         git config --global user.email "actions@github.com"
         
-        # Use GitHub CLI to create tag
-        gh auth login --with-token <<< "${{ secrets.DEPLOYMENT_TOKEN }}"
-        
         # Get current commit SHA
-        $commitSha = git rev-parse HEAD
+        $commitSha = $(git rev-parse HEAD)
+        Write-Host "Creating tag for commit: $commitSha"
         
-        # Create tag directly via GitHub API
-        gh api --method POST "repos/RazorEnhanced/RazorEnhanced/git/refs" -f "ref=refs/tags/v${{ steps.get_version.outputs.version }}" -f "sha=$commitSha"
+        # Create API request body
+        $body = @{
+          ref = "refs/tags/v${{ steps.get_version.outputs.version }}"
+          sha = $commitSha
+        } | ConvertTo-Json
+        
+        # Send API request to create tag
+        $headers = @{
+          Authorization = "token ${{ secrets.DEPLOYMENT_TOKEN }}"
+          Accept = "application/vnd.github.v3+json"
+        }
+        
+        try {
+          $response = Invoke-RestMethod -Uri "https://api.github.com/repos/RazorEnhanced/RazorEnhanced/git/refs" -Method Post -Headers $headers -Body $body -ContentType "application/json"
+          Write-Host "Tag created successfully: $($response.ref)"
+        } catch {
+          Write-Error "Failed to create tag: $_"
+          Write-Error $_.Exception.Response.StatusCode
+          Write-Error $_.Exception.Response.StatusDescription
+          Write-Error $_.Exception.Response.Content
+          exit 1
+        }
       shell: pwsh
       
 # Clean up old releases to save space
