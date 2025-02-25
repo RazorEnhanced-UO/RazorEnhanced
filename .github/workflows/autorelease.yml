@@ -156,20 +156,19 @@ jobs:
         git push
       shell: pwsh
 
-    # Create a tag in the main repository
+# Create a tag in the main repository using GitHub CLI
     - name: Create Tag
       if: ${{ steps.checkTag.outputs.exists }} == false
       run: |
-        git config user.name "GitHub Actions Bot"
-        git config user.email "actions@github.com"
+        # Create the tag locally
         git tag -a "v${{ steps.get_version.outputs.version }}" -m "RazorEnhanced ${{ steps.get_version.outputs.version }}"
         
-        # Set remote URL with token for authentication
-        git remote set-url origin https://x-access-token:${{ secrets.DEPLOYMENT_TOKEN }}@github.com/RazorEnhanced/RazorEnhanced.git
-        
-        # Push the tag
-        git push origin "v${{ steps.get_version.outputs.version }}"
-      shell: pwsh
+        # Use GitHub CLI to create tag (requires gh to be installed on runner)
+        gh auth login --with-token <<< "${{ secrets.DEPLOYMENT_TOKEN }}"
+        gh api --method POST repos/RazorEnhanced/RazorEnhanced/git/refs \
+          -f ref="refs/tags/v${{ steps.get_version.outputs.version }}" \
+          -f sha="$(git rev-parse HEAD)"
+      shell: bash
       
 # Clean up old releases to save space
     - name: Clean up old releases
