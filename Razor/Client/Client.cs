@@ -753,7 +753,7 @@ namespace Assistant
 
                     dialogResult = RazorEnhanced.UI.RE_MessageBox.Show("New Version Available",
                             $@"There is new version {args.CurrentVersion} available.\r\nYou are using version {args.InstalledVersion}.\r\nDo you want to update the application now?",
-                            ok: "Ok", no: null, cancel: null, backColor: null);
+                            ok: "Yes", no: "No", cancel: null, backColor: null);
 
                     if (dialogResult.Equals(DialogResult.OK))
                     {

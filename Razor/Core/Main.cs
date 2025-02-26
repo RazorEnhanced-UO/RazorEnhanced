@@ -308,8 +308,9 @@ namespace Assistant
 
         private static void ApplicationThreadException(object sender, ThreadExceptionEventArgs e)
         {
-            if (e.Exception is FileNotFoundException || e.Exception is FileLoadException || e.Exception is BadImageFormatException) // Mancanza dipendenze c++
-                Assistant.Engine.MainWindow.DisableRecorder();
+            if (e.Exception is FileNotFoundException || e.Exception is FileLoadException || e.Exception is BadImageFormatException) 
+                if (Assistant.Engine.MainWindow != null)
+                    Assistant.Engine.MainWindow.DisableRecorder();
             else
                 ReportCrash(e.Exception);
         }
