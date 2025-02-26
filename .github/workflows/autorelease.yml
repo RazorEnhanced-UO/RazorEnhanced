@@ -105,7 +105,7 @@ jobs:
         recursive: true
         dest: RazorEnhanced-${{ steps.get_version.outputs.version }}.zip
 
-    # Instead of creating a release in the current repo, checkout the GitHub Pages repo
+    # checkout the GitHub Pages repo
     - name: Checkout GitHub Pages Repository
       if: ${{ steps.checkTag.outputs.exists }} == false
       uses: actions/checkout@v2
@@ -114,24 +114,24 @@ jobs:
         path: gh-pages
         token: ${{ secrets.DEPLOYMENT_TOKEN }}
 
-    # Create releases directory if it doesn't exist
-    - name: Create releases directory
+    # Checkout the Releases repository
+    - name: Checkout Releases Repository
+      if: ${{ steps.checkTag.outputs.exists }} == false
+      uses: actions/checkout@v2
+      with:
+        repository: RazorEnhanced/Releases
+        path: releases-repo
+        token: ${{ secrets.DEPLOYMENT_TOKEN }}
+
+    # Copy the zip file to the Releases repository
+    - name: Copy to Releases repository
       if: ${{ steps.checkTag.outputs.exists }} == false
       run: |
-        if (!(Test-Path -Path "gh-pages/releases")) {
-          New-Item -ItemType Directory -Path "gh-pages/releases"
-        }
-      shell: pwsh
-
-    # Copy the zip file to the GitHub Pages repo
-    - name: Copy release package
-      if: ${{ steps.checkTag.outputs.exists }} == false
-      run: |
-        # Copy versioned zip file
-        Copy-Item -Path "RazorEnhanced-${{ steps.get_version.outputs.version }}.zip" -Destination "gh-pages/releases/"
-      shell: pwsh
-
+        # Copy zip file to Releases repo
+        Copy-Item -Path "RazorEnhanced-${{ steps.get_version.outputs.version }}.zip" -Destination "releases-repo/"
+        
     # Update the latest.json file with version info
+    # and also copy it to releases repo
     - name: Update latest.json
       if: ${{ steps.checkTag.outputs.exists }} == false
       run: |
@@ -141,7 +141,9 @@ jobs:
           releaseDate = (Get-Date -Format "yyyy-MM-dd")
         } | ConvertTo-Json
 
-        Set-Content -Path "gh-pages/releases/latest.json" -Value $latestJson -Force
+        Set-Content -Path "gh-pages/latest.json" -Value $latestJson -Force
+                # Create latest.zip reference (always points to latest version)
+        Copy-Item -Path "gh-pages/latest.json" -Destination "releases-repo/latest.json" -Force
       shell: pwsh
 
     # Commit and push changes to the GitHub Pages repo
@@ -151,7 +153,19 @@ jobs:
         cd gh-pages
         git config user.name "GitHub Actions Bot"
         git config user.email "actions@github.com"
-        git add releases/
+        git add /
+        git commit -m "Add release version ${{ steps.get_version.outputs.version }}"
+        git push
+      shell: pwsh
+
+    # Commit and push changes to the GitHub Releases repo
+    - name: Commit and push changes
+      if: ${{ steps.checkTag.outputs.exists }} == false
+      run: |
+        cd releases-repo
+        git config user.name "GitHub Actions Bot"
+        git config user.email "actions@github.com"
+        git add /
         git commit -m "Add release version ${{ steps.get_version.outputs.version }}"
         git push
       shell: pwsh
