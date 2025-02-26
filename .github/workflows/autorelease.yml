@@ -43,6 +43,11 @@ jobs:
         
         Write-Host "Found version: $version"
         "version=$version" >> $env:GITHUB_OUTPUT
+        
+        # Generate the download URL and store it as an output
+        $downloadUrl = "https://github.com/RazorEnhanced/RazorEnhanced/releases/download/v${version}/RazorEnhanced-${version}.zip"
+        "download_url=$downloadUrl" >> $env:GITHUB_OUTPUT
+        Write-Host "Download URL: $downloadUrl"
     
     - name: Show Version
       run: echo "${{steps.get_version.outputs.version}}"
@@ -211,7 +216,7 @@ jobs:
       run: |
         $latestJson = @{
           version = "${{ steps.get_version.outputs.version }}"
-          zipUrl = "https://github.com/RazorEnhanced/RazorEnhanced/releases/download/v${{ steps.get_version.outputs.version }}/RazorEnhanced-${{ steps.get_version.outputs.version }}.zip"
+          zipUrl = "${{ steps.get_version.outputs.download_url }}"
           releaseDate = (Get-Date -Format "yyyy-MM-dd")
         } | ConvertTo-Json
 
@@ -222,7 +227,7 @@ jobs:
     - name: Update Latest Build Link in index.htm
       run: |
         $indexFile = "gh-pages/index.htm"
-        $releaseUrl = "https://github.com/RazorEnhanced/RazorEnhanced/releases/download/v${{ steps.get_version.outputs.version }}/RazorEnhanced-${{ steps.get_version.outputs.version }}.zip"
+        $releaseUrl = "${{ steps.get_version.outputs.download_url }}"
         
         if (-Not (Test-Path $indexFile)) {
           Write-Error "index.htm not found in gh-pages directory!"
@@ -274,7 +279,7 @@ jobs:
       run: |
         $updaterXmlFile = "gh-pages/RazorEnhancedAutoUpdater.xml"
         $versionNumber = "${{ steps.get_version.outputs.version }}"
-        $releaseUrl = "https://github.com/RazorEnhanced/RazorEnhanced/releases/download/v${{ steps.get_version.outputs.version }}/RazorEnhanced-${{ steps.get_version.outputs.version }}.zip"
+        $releaseUrl = "${{ steps.get_version.outputs.download_url }}"
         
         if (-Not (Test-Path $updaterXmlFile)) {
           Write-Error "RazorEnhancedAutoUpdater.xml not found in gh-pages directory!"
