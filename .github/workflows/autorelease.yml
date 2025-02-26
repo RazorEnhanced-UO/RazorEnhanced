@@ -1,29 +1,14 @@
-# This is a basic workflow to help you get started with Actions
-
 name: AutoRelease
 
-# Controls when the action will run. 
 on:
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
-
-  # Triggers the workflow on push or pull request events but only for the release/0.8 branch
   push:
     branches: [ release/0.8 ]
-  #pull_request:
-  #  branches: [ release/0.7 ]
-
   
 env:
-  # Path to the solution file relative to the root of the project.
   SOLUTION_FILE_PATH: .
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  # Using the organization-level secret
   DEPLOYMENT_TOKEN: ${{ secrets.DEPLOYMENT_TOKEN }}
-
-  # Configuration type to build.
-  # You can convert this to a build matrix if you need coverage of multiple configuration types.
-  # https://docs.github.com/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
   BUILD_CONFIGURATION: Debug
   
 jobs:
@@ -73,7 +58,7 @@ jobs:
     - name: Show Tag Existence Result
       run: echo ${{ steps.checkTag.outputs.exists }}
     
-    # build   
+    # Build steps  
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v1 
       
@@ -83,15 +68,10 @@ jobs:
     - name: Restore NuGet packages
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: nuget restore ${{env.SOLUTION_FILE_PATH}}
-
-    - name: Print expanded MSBuild command
-      run: echo msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}}
       
     - name: Build
       if: ${{ steps.checkTag.outputs.exists == 'false' }}
       working-directory: ${{env.GITHUB_WORKSPACE}}
-      # Add additional options to the MSBuild command line here (like platform or verbosity level).
-      # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
       run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}}
 
     - name: Zip Razor
@@ -102,7 +82,92 @@ jobs:
         recursive: true
         dest: RazorEnhanced-${{ steps.get_version.outputs.version }}.zip
 
-    # checkout the GitHub Pages repo
+    # Check if release exists
+    - name: Check if release exists
+      id: check_release
+      run: |
+        $headers = @{
+          Authorization = "token ${{ secrets.GITHUB_TOKEN }}"
+          Accept = "application/vnd.github.v3+json"
+        }
+        try {
+          $response = Invoke-RestMethod -Uri "https://api.github.com/repos/${{ github.repository }}/releases/tags/v${{ steps.get_version.outputs.version }}" -Method Get -Headers $headers
+          echo "exists=true" >> $env:GITHUB_OUTPUT
+          echo "release_id=$($response.id)" >> $env:GITHUB_OUTPUT
+          Write-Host "Release already exists with ID: $($response.id)"
+        } catch {
+          if ($_.Exception.Response.StatusCode -eq 404) {
+            echo "exists=false" >> $env:GITHUB_OUTPUT
+            Write-Host "Release does not exist"
+          } else {
+            Write-Error "Error checking release: $_"
+            exit 1
+          }
+        }
+      shell: pwsh
+
+    # Create Release if it doesn't exist
+    - name: Create Release
+      id: create_release
+      if: steps.check_release.outputs.exists == 'false'
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ steps.get_version.outputs.version }}
+        release_name: RazorEnhanced ${{ steps.get_version.outputs.version }}
+        draft: false
+        prerelease: false
+
+    # Set upload URL based on whether release was created or already existed
+    - name: Set upload URL
+      id: set_upload_url
+      run: |
+        if ("${{ steps.check_release.outputs.exists }}" -eq "true") {
+          echo "upload_url=https://uploads.github.com/repos/${{ github.repository }}/releases/${{ steps.check_release.outputs.release_id }}/assets{?name,label}" >> $env:GITHUB_OUTPUT
+        } else {
+          echo "upload_url=${{ steps.create_release.outputs.upload_url }}" >> $env:GITHUB_OUTPUT
+        }
+      shell: pwsh
+        
+    # Delete existing asset if it exists (for updates)
+    - name: Delete existing asset
+      if: steps.check_release.outputs.exists == 'true'
+      run: |
+        $headers = @{
+          Authorization = "token ${{ secrets.GITHUB_TOKEN }}"
+          Accept = "application/vnd.github.v3+json"
+        }
+        
+        # Get assets for the release
+        $assetsUrl = "https://api.github.com/repos/${{ github.repository }}/releases/${{ steps.check_release.outputs.release_id }}/assets"
+        $assets = Invoke-RestMethod -Uri $assetsUrl -Method Get -Headers $headers
+        
+        # Find matching asset
+        $assetName = "RazorEnhanced-${{ steps.get_version.outputs.version }}.zip"
+        $asset = $assets | Where-Object { $_.name -eq $assetName }
+        
+        if ($asset) {
+          Write-Host "Found existing asset with ID: $($asset.id). Deleting it..."
+          Invoke-RestMethod -Uri "https://api.github.com/repos/${{ github.repository }}/releases/assets/$($asset.id)" -Method Delete -Headers $headers
+          Write-Host "Asset deleted successfully"
+        } else {
+          Write-Host "No existing asset found to delete"
+        }
+      shell: pwsh
+
+    # Upload the zip file as a release asset
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.set_upload_url.outputs.upload_url }}
+        asset_path: ./RazorEnhanced-${{ steps.get_version.outputs.version }}.zip
+        asset_name: RazorEnhanced-${{ steps.get_version.outputs.version }}.zip
+        asset_content_type: application/zip
+
+    # checkout the GitHub Pages repo to update latest.json
     - name: Checkout GitHub Pages Repository
       uses: actions/checkout@v2
       with:
@@ -110,32 +175,16 @@ jobs:
         path: gh-pages
         token: ${{ secrets.DEPLOYMENT_TOKEN }}
 
-    # Checkout the Releases repository
-    - name: Checkout Releases Repository
-      uses: actions/checkout@v2
-      with:
-        repository: RazorEnhanced/Releases
-        path: releases-repo
-        token: ${{ secrets.DEPLOYMENT_TOKEN }}
-
-    # Copy the zip file to the Releases repository
-    - name: Copy to Releases repository
-      run: |
-        # Copy zip file to Releases repo
-        Copy-Item -Path "RazorEnhanced-${{ steps.get_version.outputs.version }}.zip" -Destination "releases-repo/"
-        
-    # Update the latest.json file with version info
-    # and also copy it to releases repo
+    # Update the latest.json file with version info and direct download URL
     - name: Update latest.json
       run: |
         $latestJson = @{
           version = "${{ steps.get_version.outputs.version }}"
-          zipUrl = "https://github.com/RazorEnhanced/Releases/raw/main/RazorEnhanced-${{ steps.get_version.outputs.version }}.zip"
+          zipUrl = "https://github.com/RazorEnhanced/RazorEnhanced/releases/download/v${{ steps.get_version.outputs.version }}/RazorEnhanced-${{ steps.get_version.outputs.version }}.zip"
           releaseDate = (Get-Date -Format "yyyy-MM-dd")
         } | ConvertTo-Json
 
         Set-Content -Path "gh-pages/latest.json" -Value $latestJson -Force
-        Copy-Item -Path "gh-pages/latest.json" -Destination "releases-repo/latest.json" -Force
       shell: pwsh
 
     # Commit and push changes to the GitHub Pages repo
@@ -149,19 +198,7 @@ jobs:
         git push
       shell: pwsh
 
-    # Commit and push changes to the GitHub Releases repo
-    - name: Commit and push changes
-      run: |
-        cd releases-repo
-        git config user.name "GitHub Actions Bot"
-        git config user.email "actions@github.com"
-        git add "RazorEnhanced-${{ steps.get_version.outputs.version }}.zip"
-        git add latest.json
-        git commit -m "Add release version ${{ steps.get_version.outputs.version }}"
-        git push
-      shell: pwsh
-
-    # Create a tag using PowerShell and GitHub API
+    # Create or update tag
     - name: Create Tag
       run: |
         # Set git identity for local operations
@@ -198,13 +235,12 @@ jobs:
         }
         
         try {
-          $response = Invoke-RestMethod -Uri "https://api.github.com/repos/RazorEnhanced/RazorEnhanced/git/refs" -Method Post -Headers $headers -Body $body -ContentType "application/json"
+          $response = Invoke-RestMethod -Uri "https://api.github.com/repos/${{ github.repository }}/git/refs" -Method Post -Headers $headers -Body $body -ContentType "application/json"
           Write-Host "Tag created successfully: $($response.ref)"
         } catch {
           Write-Error "Failed to create tag: $_"
           Write-Error $_.Exception.Response.StatusCode
           Write-Error $_.Exception.Response.StatusDescription
-          Write-Error $_.Exception.Response.Content
           exit 1
         }
       shell: pwsh
