@@ -142,7 +142,6 @@ jobs:
         } | ConvertTo-Json
 
         Set-Content -Path "gh-pages/latest.json" -Value $latestJson -Force
-                # Create latest.zip reference (always points to latest version)
         Copy-Item -Path "gh-pages/latest.json" -Destination "releases-repo/latest.json" -Force
       shell: pwsh
 
@@ -153,7 +152,7 @@ jobs:
         cd gh-pages
         git config user.name "GitHub Actions Bot"
         git config user.email "actions@github.com"
-        git add /
+        git add latest.json
         git commit -m "Add release version ${{ steps.get_version.outputs.version }}"
         git push
       shell: pwsh
@@ -165,7 +164,8 @@ jobs:
         cd releases-repo
         git config user.name "GitHub Actions Bot"
         git config user.email "actions@github.com"
-        git add /
+        git add "RazorEnhanced-${{ steps.get_version.outputs.version }}.zip"
+        git add latest.json
         git commit -m "Add release version ${{ steps.get_version.outputs.version }}"
         git push
       shell: pwsh
@@ -180,7 +180,17 @@ jobs:
         
         # Get current commit SHA
         $commitSha = $(git rev-parse HEAD)
-        Write-Host "Creating tag for commit: $commitSha"
+
+                # Check if tag exists
+        if (git rev-parse "$tag" >/dev/null 2>&1) {
+          Write-Host "Tag $tag already exists. Updating it to latest commit."
+          
+          # Delete the existing tag locally and remotely
+          git tag -d $tag
+          git push --delete origin $tag
+        } else {
+          Write-Host "Tag $tag does not exist. Creating a new tag."
+        }
         
         # Create API request body
         $body = @{
