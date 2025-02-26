@@ -75,7 +75,6 @@ jobs:
       run: nuget restore ${{env.SOLUTION_FILE_PATH}}
       
     - name: Build
-      if: ${{ steps.checkTag.outputs.exists == 'false' }}
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}}
 
