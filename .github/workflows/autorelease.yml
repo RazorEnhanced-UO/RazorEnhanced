@@ -75,14 +75,12 @@ jobs:
     
     # build   
     - name: Add MSBuild to PATH
-      if: ${{ steps.checkTag.outputs.exists }} == false
       uses: microsoft/setup-msbuild@v1 
       
     - name: Display MSBuild version
       run: msbuild -version
       
     - name: Restore NuGet packages
-      if: ${{ steps.checkTag.outputs.exists }} == false
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: nuget restore ${{env.SOLUTION_FILE_PATH}}
 
@@ -97,7 +95,6 @@ jobs:
       run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}}
 
     - name: Zip Razor
-      if: ${{ steps.checkTag.outputs.exists }} == false
       id: create_zip
       uses: vimtor/action-zip@v1
       with:
@@ -107,7 +104,6 @@ jobs:
 
     # checkout the GitHub Pages repo
     - name: Checkout GitHub Pages Repository
-      if: ${{ steps.checkTag.outputs.exists }} == false
       uses: actions/checkout@v2
       with:
         repository: RazorEnhanced/razorenhanced.github.io
@@ -116,7 +112,6 @@ jobs:
 
     # Checkout the Releases repository
     - name: Checkout Releases Repository
-      if: ${{ steps.checkTag.outputs.exists }} == false
       uses: actions/checkout@v2
       with:
         repository: RazorEnhanced/Releases
@@ -125,7 +120,6 @@ jobs:
 
     # Copy the zip file to the Releases repository
     - name: Copy to Releases repository
-      if: ${{ steps.checkTag.outputs.exists }} == false
       run: |
         # Copy zip file to Releases repo
         Copy-Item -Path "RazorEnhanced-${{ steps.get_version.outputs.version }}.zip" -Destination "releases-repo/"
@@ -133,7 +127,6 @@ jobs:
     # Update the latest.json file with version info
     # and also copy it to releases repo
     - name: Update latest.json
-      if: ${{ steps.checkTag.outputs.exists }} == false
       run: |
         $latestJson = @{
           version = "${{ steps.get_version.outputs.version }}"
@@ -147,7 +140,6 @@ jobs:
 
     # Commit and push changes to the GitHub Pages repo
     - name: Commit and push changes
-      if: ${{ steps.checkTag.outputs.exists }} == false
       run: |
         cd gh-pages
         git config user.name "GitHub Actions Bot"
@@ -159,7 +151,6 @@ jobs:
 
     # Commit and push changes to the GitHub Releases repo
     - name: Commit and push changes
-      if: ${{ steps.checkTag.outputs.exists }} == false
       run: |
         cd releases-repo
         git config user.name "GitHub Actions Bot"
@@ -172,7 +163,6 @@ jobs:
 
 # Create a tag using PowerShell and GitHub API
     - name: Create Tag
-      if: ${{ steps.checkTag.outputs.exists }} == false
       run: |
         # Set git identity for local operations
         git config --global user.name "GitHub Actions Bot"
@@ -182,7 +172,7 @@ jobs:
         $commitSha = $(git rev-parse HEAD)
 
                 # Check if tag exists
-        if: ${{ steps.checkTag.outputs.exists }} == true {
+        if: ${{ steps.checkTag.outputs.exists }} == 'true' {
           Write-Host "Tag $tag already exists. Updating it to latest commit."
           
           # Delete the existing tag locally and remotely
@@ -213,28 +203,5 @@ jobs:
           Write-Error $_.Exception.Response.StatusDescription
           Write-Error $_.Exception.Response.Content
           exit 1
-        }
-      shell: pwsh
-      
-# Clean up old releases to save space
-    - name: Clean up old releases
-      if: ${{ steps.checkTag.outputs.exists }} == false
-      run: |
-        # Navigate to releases directory
-        cd gh-pages/releases
-        
-        # Get all version zip files sorted by last modified date (newest first)
-        $allZips = Get-ChildItem -Filter "RazorEnhanced-*.zip" | 
-                   Sort-Object -Property LastWriteTime -Descending
-        
-        # Keep only the latest 50 versions
-        if ($allZips.Count -gt 50) {
-          Write-Host "Found $($allZips.Count) releases, keeping the 50 most recent ones"
-          foreach ($zip in $allZips[50..($allZips.Count-1)]) {
-            Write-Host "Removing old release: $($zip.Name)"
-            Remove-Item $zip.FullName -Force
-          }
-        } else {
-          Write-Host "Found $($allZips.Count) releases, all will be kept"
         }
       shell: pwsh
