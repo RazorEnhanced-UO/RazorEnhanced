@@ -16,7 +16,7 @@ jobs:
     runs-on: windows-latest
 
     steps:         
-    - uses: actions/checkout@v2   
+    - uses: actions/checkout@v3   
     
     - name: Grab Version
       id: get_version
@@ -60,7 +60,7 @@ jobs:
     
     # Build steps  
     - name: Add MSBuild to PATH
-      uses: microsoft/setup-msbuild@v1 
+      uses: microsoft/setup-msbuild@v1.1
       
     - name: Display MSBuild version
       run: msbuild -version
@@ -92,12 +92,12 @@ jobs:
         }
         try {
           $response = Invoke-RestMethod -Uri "https://api.github.com/repos/${{ github.repository }}/releases/tags/v${{ steps.get_version.outputs.version }}" -Method Get -Headers $headers
-          echo "exists=true" >> $env:GITHUB_OUTPUT
-          echo "release_id=$($response.id)" >> $env:GITHUB_OUTPUT
+          "exists=true" >> $env:GITHUB_OUTPUT
+          "release_id=$($response.id)" >> $env:GITHUB_OUTPUT
           Write-Host "Release already exists with ID: $($response.id)"
         } catch {
           if ($_.Exception.Response.StatusCode -eq 404) {
-            echo "exists=false" >> $env:GITHUB_OUTPUT
+            "exists=false" >> $env:GITHUB_OUTPUT
             Write-Host "Release does not exist"
           } else {
             Write-Error "Error checking release: $_"
@@ -124,9 +124,9 @@ jobs:
       id: set_upload_url
       run: |
         if ("${{ steps.check_release.outputs.exists }}" -eq "true") {
-          echo "upload_url=https://uploads.github.com/repos/${{ github.repository }}/releases/${{ steps.check_release.outputs.release_id }}/assets{?name,label}" >> $env:GITHUB_OUTPUT
+          "upload_url=https://uploads.github.com/repos/${{ github.repository }}/releases/${{ steps.check_release.outputs.release_id }}/assets{?name,label}" >> $env:GITHUB_OUTPUT
         } else {
-          echo "upload_url=${{ steps.create_release.outputs.upload_url }}" >> $env:GITHUB_OUTPUT
+          "upload_url=${{ steps.create_release.outputs.upload_url }}" >> $env:GITHUB_OUTPUT
         }
       shell: pwsh
         
@@ -169,7 +169,7 @@ jobs:
 
     # checkout the GitHub Pages repo to update latest.json
     - name: Checkout GitHub Pages Repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         repository: RazorEnhanced/razorenhanced.github.io
         path: gh-pages
