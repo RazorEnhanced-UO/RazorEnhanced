@@ -42,7 +42,7 @@ jobs:
         }
         
         Write-Host "Found version: $version"
-        echo "version=$version" >> $env:GITHUB_OUTPUT
+        "version=$version" >> $env:GITHUB_OUTPUT
     
     - name: Show Version
       run: echo "${{steps.get_version.outputs.version}}"
@@ -82,7 +82,38 @@ jobs:
         recursive: true
         dest: RazorEnhanced-${{ steps.get_version.outputs.version }}.zip
 
-    # Check if release exists
+    # Create or update tag first
+    - name: Create Tag
+      run: |
+        # Set git identity for local operations
+        git config --global user.name "GitHub Actions Bot"
+        git config --global user.email "actions@github.com"
+        
+        # Get current commit SHA
+        $commitSha = $(git rev-parse HEAD)
+        
+        # Tag name with v prefix
+        $tag = "v${{ steps.get_version.outputs.version }}"
+        
+        # Proper PowerShell conditional check
+        if ("${{ steps.checkTag.outputs.exists }}" -eq "true") {
+          Write-Host "Tag $tag already exists. Updating it to latest commit."
+          
+          # Delete the existing tag locally and remotely
+          git tag -d $tag
+          git push --delete origin $tag
+        } else {
+          Write-Host "Tag $tag does not exist. Creating a new tag."
+        }
+        
+        # Create local tag
+        git tag $tag
+        git push origin $tag
+        
+        Write-Host "Tag created and pushed successfully: $tag"
+      shell: pwsh
+
+    # Now check if release exists after ensuring tag exists
     - name: Check if release exists
       id: check_release
       run: |
@@ -167,7 +198,7 @@ jobs:
         asset_name: RazorEnhanced-${{ steps.get_version.outputs.version }}.zip
         asset_content_type: application/zip
 
-    # checkout the GitHub Pages repo to update latest.json
+    # Checkout the GitHub Pages repo to update latest.json
     - name: Checkout GitHub Pages Repository
       uses: actions/checkout@v3
       with:
@@ -196,51 +227,4 @@ jobs:
         git add latest.json
         git commit -m "Add release version ${{ steps.get_version.outputs.version }}"
         git push
-      shell: pwsh
-
-    # Create or update tag
-    - name: Create Tag
-      run: |
-        # Set git identity for local operations
-        git config --global user.name "GitHub Actions Bot"
-        git config --global user.email "actions@github.com"
-        
-        # Get current commit SHA
-        $commitSha = $(git rev-parse HEAD)
-        
-        # Tag name with v prefix
-        $tag = "v${{ steps.get_version.outputs.version }}"
-        
-        # Proper PowerShell conditional check
-        if ("${{ steps.checkTag.outputs.exists }}" -eq "true") {
-          Write-Host "Tag $tag already exists. Updating it to latest commit."
-          
-          # Delete the existing tag locally and remotely
-          git tag -d $tag
-          git push --delete origin $tag
-        } else {
-          Write-Host "Tag $tag does not exist. Creating a new tag."
-        }
-        
-        # Create API request body
-        $body = @{
-          ref = "refs/tags/$tag"
-          sha = $commitSha
-        } | ConvertTo-Json
-        
-        # Send API request to create tag
-        $headers = @{
-          Authorization = "token ${{ secrets.DEPLOYMENT_TOKEN }}"
-          Accept = "application/vnd.github.v3+json"
-        }
-        
-        try {
-          $response = Invoke-RestMethod -Uri "https://api.github.com/repos/${{ github.repository }}/git/refs" -Method Post -Headers $headers -Body $body -ContentType "application/json"
-          Write-Host "Tag created successfully: $($response.ref)"
-        } catch {
-          Write-Error "Failed to create tag: $_"
-          Write-Error $_.Exception.Response.StatusCode
-          Write-Error $_.Exception.Response.StatusDescription
-          exit 1
-        }
       shell: pwsh
