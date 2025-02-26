@@ -137,7 +137,7 @@ jobs:
       run: |
         $latestJson = @{
           version = "${{ steps.get_version.outputs.version }}"
-          zipUrl = "https://razorenhanced.github.io/releases/RazorEnhanced-${{ steps.get_version.outputs.version }}.zip"
+          zipUrl = "https://github.com/RazorEnhanced/Releases/raw/main/RazorEnhanced-${{ steps.get_version.outputs.version }}.zip"
           releaseDate = (Get-Date -Format "yyyy-MM-dd")
         } | ConvertTo-Json
 
@@ -182,7 +182,7 @@ jobs:
         $commitSha = $(git rev-parse HEAD)
 
                 # Check if tag exists
-        if (git rev-parse "$tag" >/dev/null 2>&1) {
+        if: ${{ steps.checkTag.outputs.exists }} == true {
           Write-Host "Tag $tag already exists. Updating it to latest commit."
           
           # Delete the existing tag locally and remotely
