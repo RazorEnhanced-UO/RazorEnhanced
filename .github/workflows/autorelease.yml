@@ -203,10 +203,10 @@ jobs:
         $allZips = Get-ChildItem -Filter "RazorEnhanced-*.zip" | 
                    Sort-Object -Property LastWriteTime -Descending
         
-        # Keep only the latest 500 versions
-        if ($allZips.Count -gt 500) {
-          Write-Host "Found $($allZips.Count) releases, keeping the 500 most recent ones"
-          foreach ($zip in $allZips[500..($allZips.Count-1)]) {
+        # Keep only the latest 50 versions
+        if ($allZips.Count -gt 50) {
+          Write-Host "Found $($allZips.Count) releases, keeping the 50 most recent ones"
+          foreach ($zip in $allZips[50..($allZips.Count-1)]) {
             Write-Host "Removing old release: $($zip.Name)"
             Remove-Item $zip.FullName -Force
           }
