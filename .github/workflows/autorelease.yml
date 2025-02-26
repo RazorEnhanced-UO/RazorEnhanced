@@ -198,7 +198,7 @@ jobs:
         asset_name: RazorEnhanced-${{ steps.get_version.outputs.version }}.zip
         asset_content_type: application/zip
 
-    # Checkout the GitHub Pages repo to update latest.json
+    # Checkout the GitHub Pages repo to update latest.json and other files
     - name: Checkout GitHub Pages Repository
       uses: actions/checkout@v3
       with:
@@ -218,6 +218,94 @@ jobs:
         Set-Content -Path "gh-pages/latest.json" -Value $latestJson -Force
       shell: pwsh
 
+    # Update Latest Build Link in index.htm (Moved from build_doc_api.yml)
+    - name: Update Latest Build Link in index.htm
+      run: |
+        $indexFile = "gh-pages/index.htm"
+        $releaseUrl = "https://github.com/RazorEnhanced/RazorEnhanced/releases/download/v${{ steps.get_version.outputs.version }}/RazorEnhanced-${{ steps.get_version.outputs.version }}.zip"
+        
+        if (-Not (Test-Path $indexFile)) {
+          Write-Error "index.htm not found in gh-pages directory!"
+          exit 1
+        }
+
+        # Read the file content
+        $content = Get-Content $indexFile -Raw
+        
+        # Make a backup of the original file
+        Copy-Item -Path $indexFile -Destination "$indexFile.bak"
+        
+        # Pattern adjusted for GitHub release URL instead of local repository
+        $pattern = '(https://github\.com/RazorEnhanced/[^/]+/(?:releases|raw)/[^/]+/(?:releases/)?)[^"]+(" class="btn">)'
+        $replacement = "$releaseUrl`${2}"
+        
+        # Replace the old download link with the new one
+        $updatedContent = $content -replace $pattern, $replacement
+        
+        # Check if the pattern was found and replacement was made
+        if ($updatedContent -eq $content) {
+          Write-Warning "No matches found for replacement pattern. The file remains unchanged."
+          
+          # More specific troubleshooting info
+          $startPos = $content.IndexOf('class="btn"')
+          if ($startPos -gt 0) {
+            $contextStart = [Math]::Max(0, $startPos - 100)
+            $contextLength = [Math]::Min(200, $content.Length - $contextStart)
+            $context = $content.Substring($contextStart, $contextLength)
+            Write-Host "Context around button link: $context"
+          }
+        }
+        
+        try {
+          # Write the updated content back to the file
+          Set-Content -Path $indexFile -Value $updatedContent -ErrorAction Stop
+          Write-Host "Successfully updated latest build link in index.htm to use: $releaseUrl"
+        }
+        catch {
+          Write-Error "Failed to write to $indexFile. Error: $_"
+          # Restore from backup
+          Copy-Item -Path "$indexFile.bak" -Destination $indexFile
+          exit 1
+        }
+      shell: pwsh
+
+    # Update RazorEnhancedAutoUpdater.xml with the latest version (Moved from build_doc_api.yml)
+    - name: Update Auto Updater XML
+      run: |
+        $updaterXmlFile = "gh-pages/RazorEnhancedAutoUpdater.xml"
+        $versionNumber = "${{ steps.get_version.outputs.version }}"
+        $releaseUrl = "https://github.com/RazorEnhanced/RazorEnhanced/releases/download/v${{ steps.get_version.outputs.version }}/RazorEnhanced-${{ steps.get_version.outputs.version }}.zip"
+        
+        if (-Not (Test-Path $updaterXmlFile)) {
+          Write-Error "RazorEnhancedAutoUpdater.xml not found in gh-pages directory!"
+          exit 1
+        }
+
+        # Read the XML file
+        [xml]$xmlContent = Get-Content $updaterXmlFile
+        
+        # Update version
+        $xmlContent.item.version = $versionNumber
+        
+        # Update URL to GitHub release URL
+        $xmlContent.item.url = $releaseUrl
+        
+        # Save the updated XML
+        try {
+          $xmlContent.Save($updaterXmlFile)
+          Write-Host "Successfully updated RazorEnhancedAutoUpdater.xml with version: $versionNumber"
+          Write-Host "Updated download URL: $releaseUrl"
+        }
+        catch {
+          Write-Error "Failed to update $updaterXmlFile. Error: $_"
+          exit 1
+        }
+        
+        # Output updated content for verification
+        Write-Host "Updated XML content:"
+        Get-Content $updaterXmlFile
+      shell: pwsh
+
     # Commit and push changes to the GitHub Pages repo
     - name: Commit and push changes
       run: |
@@ -225,6 +313,8 @@ jobs:
         git config user.name "GitHub Actions Bot"
         git config user.email "actions@github.com"
         git add latest.json
-        git commit -m "Add release version ${{ steps.get_version.outputs.version }}"
+        git add index.htm
+        git add RazorEnhancedAutoUpdater.xml
+        git commit -m "Update to version ${{ steps.get_version.outputs.version }}"
         git push
       shell: pwsh
