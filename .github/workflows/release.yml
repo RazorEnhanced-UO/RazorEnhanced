@@ -271,7 +271,7 @@ jobs:
         }
       shell: pwsh
 
-    # Update RazorEnhancedAutoUpdater.xml with the latest version (Moved from build_doc_api.yml)
+    # Update RazorEnhancedAutoUpdater.xml with the latest version
     - name: Update Auto Updater XML
       run: |
         $updaterXmlFile = "gh-pages/RazorEnhancedAutoUpdater.xml"
@@ -311,7 +311,6 @@ jobs:
     # Generate AI-powered changelog from changes since the last tag
     - name: Generate AI Changelog
       id: generate_changelog
-      if: steps.checkTag.outputs.exists != 'true'
       shell: pwsh
       run: |
         # Fetch all history for proper changelog generation
@@ -385,7 +384,6 @@ jobs:
 
     # Update the changelog.html file with the new entry
     - name: Update Changelog File
-      if: steps.checkTag.outputs.exists != 'true'
       shell: pwsh
       run: |
         $changelogPath = "gh-pages/changelog.html"
@@ -420,7 +418,6 @@ jobs:
       
     # Print the generated changelog content to the build log
     - name: Print Changelog Content
-      if: steps.checkTag.outputs.exists != 'true'
       shell: pwsh
       run: |
         if (Test-Path "new_changelog_entry.txt") {
