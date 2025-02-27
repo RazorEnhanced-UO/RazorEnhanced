@@ -429,15 +429,15 @@ jobs:
         }
 
     # Commit and push changes to the GitHub Pages repo
-    #- name: Commit and push changes
-    #  run: |
-    #    cd gh-pages
-    #    git config user.name "GitHub Actions Bot"
-    #    git config user.email "actions@github.com"
-    #    git add latest.json
-    #    git add index.htm
-    #    git add RazorEnhancedAutoUpdater.xml
-    #    git add changelog.html
-    #    git commit -m "Update to version ${{ steps.get_version.outputs.version }}"
-    #    git push
-    #  shell: pwsh
+    - name: Commit and push changes
+      run: |
+        cd gh-pages
+        git config user.name "GitHub Actions Bot"
+        git config user.email "actions@github.com"
+        git add latest.json
+        git add index.htm
+        git add RazorEnhancedAutoUpdater.xml
+        git add changelog.html
+        git commit -m "Update to version ${{ steps.get_version.outputs.version }}"
+        git push
+      shell: pwsh
