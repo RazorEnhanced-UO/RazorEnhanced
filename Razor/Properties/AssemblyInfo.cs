@@ -6,20 +6,12 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 //
+[assembly: AssemblyVersion("0.8.2.242")]
 [assembly: AssemblyTitle("Razor Enhanced")]
 [assembly: AssemblyDescription("The bleeding edge UO tool")]
-//[assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("www.razorenhanced.net")]
 [assembly: AssemblyProduct("Razor Enhanced")]
-//[assembly: AssemblyCopyright("")]
-//[assembly: AssemblyTrademark("")]
-//[assembly: AssemblyCulture("")]
 [assembly: ComVisibleAttribute(false)]
-[assembly: AssemblyTitleAttribute("Razor Enhanced")]
-[assembly: AssemblyDescriptionAttribute("Automation control for Ultima Online using multiple script languages")]
-[assembly: AssemblyCompanyAttribute("www.razorenhanced.net")]
-
-[assembly: AssemblyVersion("0.8.2.242")]
 
 //
 // In order to sign your assembly you must specify a key to use. Refer to the
