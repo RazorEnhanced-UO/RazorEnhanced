@@ -179,9 +179,9 @@ namespace Ultima
                         Bitmap bmp = m_Cache[index];
                         if ((bmp == null) || (m_Removed[index]))
                         {
-                            binidx.Write((int)-1); // lookup
-                            binidx.Write((int)0); // length
-                            binidx.Write((int)-1); // extra
+                            binidx.Write(-1); // lookup
+                            binidx.Write(0); // length
+                            binidx.Write(-1); // extra
                         }
                         else
                         {
@@ -191,9 +191,9 @@ namespace Ultima
                             CheckSums sum;
                             if (compareSaveImages(checksum, out sum))
                             {
-                                binidx.Write((int)sum.pos); //lookup
-                                binidx.Write((int)sum.length);
-                                binidx.Write((int)0);
+                                binidx.Write(sum.pos); //lookup
+                                binidx.Write(sum.length);
+                                binidx.Write(0);
                                 //Tex.WriteLine(System.String.Format("0x{0:X4} : 0x{1:X4} 0x{2:X4}", index, (int)sum.pos, (int)sum.length));
                                 //Tex.WriteLine(System.String.Format("0x{0:X4} -> 0x{1:X4}", sum.index, index));
                                 continue;
@@ -216,7 +216,7 @@ namespace Ultima
                             int start = length;
                             length = (int)binmul.BaseStream.Position - length;
                             binidx.Write(length);
-                            binidx.Write((int)(bmp.Width == 64 ? 0 : 1));
+                            binidx.Write(bmp.Width == 64 ? 0 : 1);
                             bmp.UnlockBits(bd);
                             CheckSums s = new CheckSums() { pos = start, length = length, checksum = checksum, index = index };
                             //Tex.WriteLine(System.String.Format("0x{0:X4} : 0x{1:X4} 0x{2:X4}", index, start, length));

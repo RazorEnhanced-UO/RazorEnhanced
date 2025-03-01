@@ -455,7 +455,7 @@ namespace Ultima
                         esi += (uint)s[i + 9] << 8;
                         goto case 9;
                     case 9:
-                        esi += (uint)s[i + 8];
+                        esi += s[i + 8];
                         goto case 8;
                     case 8:
                         edi += (uint)s[i + 7] << 24;
@@ -467,7 +467,7 @@ namespace Ultima
                         edi += (uint)s[i + 5] << 8;
                         goto case 5;
                     case 5:
-                        edi += (uint)s[i + 4];
+                        edi += s[i + 4];
                         goto case 4;
                     case 4:
                         ebx += (uint)s[i + 3] << 24;
@@ -479,7 +479,7 @@ namespace Ultima
                         ebx += (uint)s[i + 1] << 8;
                         goto case 1;
                     case 1:
-                        ebx += (uint)s[i];
+                        ebx += s[i];
                         break;
                 }
 

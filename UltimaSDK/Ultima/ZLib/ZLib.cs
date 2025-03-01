@@ -43,9 +43,9 @@ namespace Ultima
 
         static ZLib()
         {
-            if(Environment.Is64BitProcess) 
+            if (Environment.Is64BitProcess)
             {
-                if(Platforms.PlatformHelper.IsWindows)
+                if (Platforms.PlatformHelper.IsWindows)
                 {
                     _compressor = new Compressor64();
                 }
@@ -166,7 +166,7 @@ namespace Ultima
             {
                 long destLengthLong = destLength;
                 ZLibError z = SafeNativeMethods.compress(dest, ref destLengthLong, source, sourceLength);
-                destLength = (int) destLengthLong;
+                destLength = (int)destLengthLong;
 
                 return z;
             }
@@ -184,7 +184,7 @@ namespace Ultima
                     quality
                 );
 
-                destLength = (int) destLengthLong;
+                destLength = (int)destLengthLong;
 
                 return z;
             }
@@ -193,7 +193,7 @@ namespace Ultima
             {
                 long destLengthLong = destLength;
                 ZLibError z = SafeNativeMethods.uncompress(dest, ref destLengthLong, source, sourceLength);
-                destLength = (int) destLengthLong;
+                destLength = (int)destLengthLong;
 
                 return z;
             }

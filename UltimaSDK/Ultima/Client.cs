@@ -95,7 +95,7 @@ namespace Ultima
             {
                 case 1: return (sbyte)buffer[0];
                 case 2: return (short)(buffer[0] | (buffer[1] << 8));
-                case 4: return (int)(buffer[0] | (buffer[1] << 8) | (buffer[2] << 16) | (buffer[3] << 24));
+                case 4: return buffer[0] | (buffer[1] << 8) | (buffer[2] << 16) | (buffer[3] << 24);
             }
 
             int val = 0;
@@ -368,7 +368,7 @@ namespace Ultima
 
         private static void SendChar(ClientWindowHandle hWnd, char c)
         {
-            int value = (int)c;
+            int value = c;
             int lParam = 1 | ((NativeMethods.OemKeyScan(value) & 0xFF) << 16) | (0x3 << 30);
 
             NativeMethods.PostMessage(hWnd, WM_CHAR, value, lParam);

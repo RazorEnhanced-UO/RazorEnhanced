@@ -307,24 +307,24 @@ namespace ZLibNative
             switch (_CompressionMode)
             {
                 case CompressionMode.Compress:
-                {
-                    InitZLibHeader();
-                    _DeflateStream = new DeflateStream(_RawStream, _CompressionLevel, true);
-
-                    break;
-                }
-
-                case CompressionMode.Decompress:
-                {
-                    if (!IsZLibStream(_RawStream))
                     {
-                        throw new InvalidDataException();
+                        InitZLibHeader();
+                        _DeflateStream = new DeflateStream(_RawStream, _CompressionLevel, true);
+
+                        break;
                     }
 
-                    _DeflateStream = new DeflateStream(_RawStream, CompressionMode.Decompress, true);
+                case CompressionMode.Decompress:
+                    {
+                        if (!IsZLibStream(_RawStream))
+                        {
+                            throw new InvalidDataException();
+                        }
 
-                    break;
-                }
+                        _DeflateStream = new DeflateStream(_RawStream, CompressionMode.Decompress, true);
+
+                        break;
+                    }
             }
         }
 
@@ -346,25 +346,25 @@ namespace ZLibNative
             switch (_CompressionLevel)
             {
                 case CompressionLevel.NoCompression:
-                {
-                    header.FLevel = FLevel.Faster;
+                    {
+                        header.FLevel = FLevel.Faster;
 
-                    break;
-                }
+                        break;
+                    }
 
                 case CompressionLevel.Fastest:
-                {
-                    header.FLevel = FLevel.Default;
+                    {
+                        header.FLevel = FLevel.Default;
 
-                    break;
-                }
+                        break;
+                    }
 
                 case CompressionLevel.Optimal:
-                {
-                    header.FLevel = FLevel.Optimal;
+                    {
+                        header.FLevel = FLevel.Optimal;
 
-                    break;
-                }
+                        break;
+                    }
             }
 
             bytesHeader = header.EncodeZlibHeader();

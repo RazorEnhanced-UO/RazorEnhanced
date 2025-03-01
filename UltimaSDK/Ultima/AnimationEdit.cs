@@ -246,9 +246,9 @@ namespace Ultima
                         if (anim == null)
                         {
                             bin.BaseStream.Seek(indexpos, SeekOrigin.Begin);
-                            bin.Write((int)-1);
-                            bin.Write((int)-1);
-                            bin.Write((int)-1);
+                            bin.Write(-1);
+                            bin.Write(-1);
+                            bin.Write(-1);
                             indexpos = bin.BaseStream.Position;
                         }
                         else
@@ -274,8 +274,8 @@ namespace Ultima
             }
             string idx = Path.Combine(path, filename + ".idx");
             string mul = Path.Combine(path, filename + ".mul");
-            using (FileStream fsidx = new FileStream(idx, FileMode.Create, FileAccess.Write, FileShare.Write),
-                              fsmul = new FileStream(mul, FileMode.Create, FileAccess.Write, FileShare.Write))
+            using (FileStream fsidx = new FileStream(idx, FileMode.Create, FileAccess.Write, FileShare.ReadWrite),
+                              fsmul = new FileStream(mul, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
             {
                 using (BinaryWriter binidx = new BinaryWriter(fsidx),
                                     binmul = new BinaryWriter(fsmul))
@@ -295,9 +295,9 @@ namespace Ultima
 
                         if (anim == null)
                         {
-                            binidx.Write((int)-1);
-                            binidx.Write((int)-1);
-                            binidx.Write((int)-1);
+                            binidx.Write(-1);
+                            binidx.Write(-1);
+                            binidx.Write(-1);
                         }
                         else
                             anim.Save(binmul, binidx);
@@ -425,7 +425,7 @@ namespace Ultima
                 return;
             if (index > Frames.Count)
                 return;
-            Frames[index] = new FrameEdit(bit, Palette, ((FrameEdit)Frames[index]).Center.X, ((FrameEdit)Frames[index]).Center.Y);
+            Frames[index] = new FrameEdit(bit, Palette, Frames[index].Center.X, Frames[index].Center.Y);
         }
 
         public void RemoveFrame(int index)
@@ -704,9 +704,9 @@ namespace Ultima
         {
             if ((Frames == null) || (Frames.Count == 0))
             {
-                idx.Write((int)-1);
-                idx.Write((int)-1);
-                idx.Write((int)-1);
+                idx.Write(-1);
+                idx.Write(-1);
+                idx.Write(-1);
                 return;
             }
             long start = bin.BaseStream.Position;
@@ -715,7 +715,7 @@ namespace Ultima
             for (int i = 0; i < 0x100; ++i)
                 bin.Write((ushort)(Palette[i] ^ 0x8000));
             long startpos = bin.BaseStream.Position;
-            bin.Write((int)Frames.Count);
+            bin.Write(Frames.Count);
             long seek = bin.BaseStream.Position;
             long curr = bin.BaseStream.Position + 4 * Frames.Count;
             foreach (FrameEdit frame in Frames)
@@ -730,7 +730,7 @@ namespace Ultima
 
             start = bin.BaseStream.Position - start;
             idx.Write((int)start);
-            idx.Write((int)idxextra);
+            idx.Write(idxextra);
         }
 
         public void ExportToVD(BinaryWriter bin, ref long indexpos, ref long animpos)
@@ -738,9 +738,9 @@ namespace Ultima
             bin.BaseStream.Seek(indexpos, SeekOrigin.Begin);
             if ((Frames == null) || (Frames.Count == 0))
             {
-                bin.Write((int)-1);
-                bin.Write((int)-1);
-                bin.Write((int)-1);
+                bin.Write(-1);
+                bin.Write(-1);
+                bin.Write(-1);
                 indexpos = bin.BaseStream.Position;
                 return;
             }
@@ -751,7 +751,7 @@ namespace Ultima
             for (int i = 0; i < 0x100; ++i)
                 bin.Write((ushort)(Palette[i] ^ 0x8000));
             long startpos = (int)bin.BaseStream.Position;
-            bin.Write((int)Frames.Count);
+            bin.Write(Frames.Count);
             long seek = (int)bin.BaseStream.Position;
             long curr = bin.BaseStream.Position + 4 * Frames.Count;
             foreach (FrameEdit frame in Frames)
@@ -768,7 +768,7 @@ namespace Ultima
             animpos = bin.BaseStream.Position;
             bin.BaseStream.Seek(indexpos, SeekOrigin.Begin);
             bin.Write((int)length);
-            bin.Write((int)idxextra);
+            bin.Write(idxextra);
             indexpos = bin.BaseStream.Position;
         }
     }
@@ -870,7 +870,7 @@ namespace Ultima
                         raw.data = new byte[raw.run];
                         while (r < raw.run)
                         {
-                            ushort col = (ushort)(cur[r + i]);
+                            ushort col = cur[r + i];
                             raw.data[r++] = GetPaletteIndex(palette, col);
                         }
                         tmp.Add(raw);
@@ -903,7 +903,7 @@ namespace Ultima
                 if (palette[i] == col)
                     return (byte)i;
             }
-            return (byte)0;
+            return 0;
         }
 
         public void Save(BinaryWriter bin)
@@ -918,12 +918,12 @@ namespace Ultima
                 {
                     int newHeader = RawData[j].run | (RawData[j].offy << 12) | (RawData[j].offx << 22);
                     newHeader ^= DoubleXor;
-                    bin.Write((int)newHeader);
+                    bin.Write(newHeader);
                     foreach (byte b in RawData[j].data)
                         bin.Write(b);
                 }
             }
-            bin.Write((int)0x7FFF7FFF);
+            bin.Write(0x7FFF7FFF);
         }
     }
 }

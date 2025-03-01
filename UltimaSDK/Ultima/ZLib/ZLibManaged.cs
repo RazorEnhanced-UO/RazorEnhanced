@@ -55,7 +55,7 @@ namespace Ultima
                 {
                     for (int i = 0, b = ds.ReadByte(); i < length && b >= 0; i++, b = ds.ReadByte())
                     {
-                        dest[i] = (byte) b;
+                        dest[i] = (byte)b;
                     }
                 }
             }
@@ -63,15 +63,15 @@ namespace Ultima
 
         public static unsafe void Decompress(IntPtr source, int sourceLength, int offset, IntPtr dest, int length)
         {
-            using (UnmanagedMemoryStream stream = new UnmanagedMemoryStream((byte*) source.ToPointer(), sourceLength - offset))
+            using (UnmanagedMemoryStream stream = new UnmanagedMemoryStream((byte*)source.ToPointer(), sourceLength - offset))
             {
                 using (ZLIBStream ds = new ZLIBStream(stream, CompressionMode.Decompress))
                 {
-                    byte* dstPtr = (byte*) dest.ToPointer();
+                    byte* dstPtr = (byte*)dest.ToPointer();
 
                     for (int i = 0, b = ds.ReadByte(); i < length && b >= 0; i++, b = ds.ReadByte())
                     {
-                        dstPtr[i] = (byte) b;
+                        dstPtr[i] = (byte)b;
                     }
                 }
             }
@@ -87,7 +87,7 @@ namespace Ultima
                     ds.Flush();
                 }
 
-                destLength = (int) stream.Position;
+                destLength = (int)stream.Position;
             }
         }
     }

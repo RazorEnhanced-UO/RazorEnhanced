@@ -97,12 +97,12 @@ namespace Ultima
                 {
                     for (int i = 0; i < m_FileIndex.Index.Length; ++i)
                     {
-                        SkillInfo skill = (i < m_SkillEntries.Count) ? (SkillInfo)m_SkillEntries[i] : null;
+                        SkillInfo skill = (i < m_SkillEntries.Count) ? m_SkillEntries[i] : null;
                         if (skill == null)
                         {
-                            binidx.Write((int)-1); // lookup
-                            binidx.Write((int)0); // length
-                            binidx.Write((int)0); // extra
+                            binidx.Write(-1); // lookup
+                            binidx.Write(0); // length
+                            binidx.Write(0); // extra
                         }
                         else
                         {

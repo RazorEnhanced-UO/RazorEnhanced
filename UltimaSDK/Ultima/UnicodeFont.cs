@@ -26,7 +26,7 @@ namespace Ultima
             int width = 0;
             for (int i = 0; i < text.Length; ++i)
             {
-                int c = (int)text[i] % 0x10000;
+                int c = text[i] % 0x10000;
                 width += Chars[c].Width;
                 width += Chars[c].XOffset;
             }
@@ -45,7 +45,7 @@ namespace Ultima
             int height = 0;
             for (int i = 0; i < text.Length; ++i)
             {
-                int c = (int)text[i] % 0x10000;
+                int c = text[i] % 0x10000;
                 height = Math.Max(height, Chars[c].Height + Chars[c].YOffset);
             }
             return height;
@@ -179,11 +179,11 @@ namespace Ultima
                         for (int c = 0; c < 0x10000; ++c)
                         {
                             Fonts[i].Chars[c] = new UnicodeChar();
-                            fs.Seek((long)((c) * 4), SeekOrigin.Begin);
+                            fs.Seek((c) * 4, SeekOrigin.Begin);
                             int num2 = bin.ReadInt32();
                             if ((num2 >= fs.Length) || (num2 <= 0))
                                 continue;
-                            fs.Seek((long)num2, SeekOrigin.Begin);
+                            fs.Seek(num2, SeekOrigin.Begin);
                             sbyte xOffset = bin.ReadSByte();
                             sbyte yOffset = bin.ReadSByte();
                             int Width = bin.ReadByte();
@@ -216,7 +216,7 @@ namespace Ultima
             {
                 for (int i = 0; i < text.Length; ++i)
                 {
-                    int c = (int)text[i] % 0x10000;
+                    int c = text[i] % 0x10000;
                     Bitmap bmp = Fonts[fontId].Chars[c].GetImage();
                     dx += Fonts[fontId].Chars[c].XOffset;
                     graph.DrawImage(bmp, dx, dy + Fonts[fontId].Chars[c].YOffset);
@@ -246,7 +246,7 @@ namespace Ultima
                     {
                         if (Fonts[filetype].Chars[c].Bytes == null)
                             continue;
-                        fs.Seek((long)((c) * 4), SeekOrigin.Begin);
+                        fs.Seek((c) * 4, SeekOrigin.Begin);
                         bin.Write((int)fs.Length);
                         fs.Seek(fs.Length, SeekOrigin.Begin);
                         bin.Write(Fonts[filetype].Chars[c].XOffset);

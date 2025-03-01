@@ -625,9 +625,9 @@ namespace Ultima
                                     && (!map.Tiles.PendingStatic(x, y)))
                                     || (map.Tiles.IsStaticBlockRemoved(x, y)))
                                 {
-                                    binidx.Write((int)-1); // lookup
-                                    binidx.Write((int)-1); // length
-                                    binidx.Write((int)-1); // extra
+                                    binidx.Write(-1); // lookup
+                                    binidx.Write(-1); // length
+                                    binidx.Write(-1); // extra
                                 }
                                 else
                                 {
@@ -774,9 +774,9 @@ namespace Ultima
                                     }
                                     else
                                     {
-                                        binidx.Write((int)-1); //lookup
-                                        binidx.Write((int)-1); //length
-                                        binidx.Write((int)-1); //extra
+                                        binidx.Write(-1); //lookup
+                                        binidx.Write(-1); //length
+                                        binidx.Write(-1); //extra
                                     }
                                 }
                             }
@@ -787,9 +787,9 @@ namespace Ultima
                                 {
                                     for (; y < blocky; ++y)
                                     {
-                                        binidx.Write((int)-1); //lookup
-                                        binidx.Write((int)-1); //length
-                                        binidx.Write((int)-1); //extra
+                                        binidx.Write(-1); //lookup
+                                        binidx.Write(-1); //length
+                                        binidx.Write(-1); //extra
                                     }
                                     y = 0;
                                 }
@@ -856,7 +856,7 @@ namespace Ultima
                                 {
                                     for (; y < blocky; ++y)
                                     {
-                                        binmul.Write((int)0);
+                                        binmul.Write(0);
                                         for (int i = 0; i < 64; ++i)
                                         {
                                             binmul.Write((short)0);

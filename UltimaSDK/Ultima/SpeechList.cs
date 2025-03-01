@@ -39,7 +39,7 @@ namespace Ultima
                     fs.Read(buffer, 0, buffer.Length);
                     fixed (byte* data = buffer)
                     {
-                        byte* bindat = (byte*)data;
+                        byte* bindat = data;
                         byte* bindatend = bindat + buffer.Length;
 
                         while (bindat != bindatend)

@@ -202,7 +202,7 @@ namespace Ultima
             double len;
             if (m_Cache[soundID] != null)
             {
-                len = (double)m_Cache[soundID].buffer.Length;
+                len = m_Cache[soundID].buffer.Length;
                 len -= 44; //wavheaderlength
             }
             else
@@ -222,7 +222,7 @@ namespace Ultima
                     return 0;
                 stream.Close();
                 length -= 32; //mulheaderlength
-                len = (double)length;
+                len = length;
             }
             len /= 0x5622; // Sample Rate
             len /= 2;
@@ -273,9 +273,9 @@ namespace Ultima
                         }
                         if ((sound == null) || (m_Removed[i]))
                         {
-                            binidx.Write((int)-1); // lookup
-                            binidx.Write((int)-1); // length
-                            binidx.Write((int)-1); // extra
+                            binidx.Write(-1); // lookup
+                            binidx.Write(-1); // length
+                            binidx.Write(-1); // extra
                         }
                         else
                         {

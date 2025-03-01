@@ -24,7 +24,7 @@ namespace Ultima
             string path = Files.GetFilePath("animdata.mul");
             if (path != null)
             {
-                using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 {
                     using (BinaryReader bin = new BinaryReader(fs))
                     {

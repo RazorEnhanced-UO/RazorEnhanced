@@ -181,9 +181,9 @@ namespace Ultima
 
                         if ((bmp == null) || (m_Removed[index]))
                         {
-                            binidx.Write((int)-1); // lookup
-                            binidx.Write((int)-1); // length
-                            binidx.Write((int)-1); // extra
+                            binidx.Write(-1); // lookup
+                            binidx.Write(-1); // length
+                            binidx.Write(-1); // extra
                         }
                         else
                         {
@@ -208,7 +208,7 @@ namespace Ultima
                             }
                             length = (int)fsmul.Position - length;
                             binidx.Write(length);
-                            binidx.Write((int)(bmp.Width << 16) + bmp.Height);
+                            binidx.Write((bmp.Width << 16) + bmp.Height);
                             bmp.UnlockBits(bd);
                         }
                     }

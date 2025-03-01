@@ -97,7 +97,7 @@ namespace ZLibNative
 
         private void RefreshFCheck()
         {
-            byte byteFLG = (byte) (Convert.ToByte(FLevel) << 1);
+            byte byteFLG = (byte)(Convert.ToByte(FLevel) << 1);
             byteFLG |= Convert.ToByte(FDict);
 
             FCheck = Convert.ToByte(31 - Convert.ToByte((GetCMF() * 256 + byteFLG) % 31));
@@ -105,7 +105,7 @@ namespace ZLibNative
 
         private byte GetCMF()
         {
-            byte byteCMF = (byte) (CompressionInfo << 4);
+            byte byteCMF = (byte)(CompressionInfo << 4);
             byteCMF |= CompressionMethod;
 
             return byteCMF;
@@ -113,8 +113,8 @@ namespace ZLibNative
 
         private byte GetFLG()
         {
-            byte byteFLG = (byte) (Convert.ToByte(FLevel) << 6);
-            byteFLG |= (byte) (Convert.ToByte(FDict) << 5);
+            byte byteFLG = (byte)(Convert.ToByte(FLevel) << 6);
+            byteFLG |= (byte)(Convert.ToByte(FDict) << 5);
             byteFLG |= FCheck;
 
             return byteFLG;
@@ -146,7 +146,7 @@ namespace ZLibNative
 
             result.FCheck = Convert.ToByte(pFlag & 0x1F);
             result.FDict = Convert.ToBoolean(Convert.ToByte((pFlag & 0x20) >> 5));
-            result.FLevel = (FLevel) Convert.ToByte((pFlag & 0xC0) >> 6);
+            result.FLevel = (FLevel)Convert.ToByte((pFlag & 0xC0) >> 6);
 
             result.IsSupportedZLibStream = result.CompressionMethod == 8 && result.CompressionInfo == 7 && (pCMF * 256 + pFlag) % 31 == 0 && result.FDict == false;
 

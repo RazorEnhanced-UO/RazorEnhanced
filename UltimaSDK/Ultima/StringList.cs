@@ -18,6 +18,8 @@ namespace Ultima
 
         private static byte[] m_Buffer = new byte[1024];
 
+        internal static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
+
         /// <summary>
         /// Initialize <see cref="StringList"/> of Language
         /// </summary>
@@ -25,7 +27,9 @@ namespace Ultima
         public StringList(string language)
         {
             Language = language;
-            LoadEntry(Files.GetFilePath(String.Format("cliloc.{0}", language)));
+            string filePath = Files.GetFilePath(String.Format("cliloc.{0}", language));
+            logger.Debug($"StringList is using {filePath}");
+            LoadEntry(filePath);
         }
 
         /// <summary>
@@ -39,6 +43,7 @@ namespace Ultima
             LoadEntry(path);
         }
 
+        // New decompression algorithm Thanks to Karasho@ClassicUO
         private void LoadEntry(string path)
         {
             if (path == null)
@@ -46,33 +51,37 @@ namespace Ultima
                 Entries = new List<StringEntry>(0);
                 return;
             }
-
             Entries = new List<StringEntry>();
             m_StringTable = new Dictionary<int, string>();
             m_EntryTable = new Dictionary<int, StringEntry>();
 
-            using (BinaryReader bin = new BinaryReader(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read)))
+            using (var fileStream = new FileStream(path, FileMode.Open, FileAccess.Read))
             {
-                m_Header1 = bin.ReadInt32();
-                m_Header2 = bin.ReadInt16();
 
-                while (bin.BaseStream.Length != bin.BaseStream.Position)
+                int bytesRead;
+                var totalRead = 0;
+                var buf = new byte[fileStream.Length];
+                while ((bytesRead = fileStream.Read(buf, totalRead, Math.Min(4096, buf.Length - totalRead))) > 0)
+                    totalRead += bytesRead;
+
+                var output = buf[3] == 0x8E ? Ultima.BwtDecompress.Decompress(buf) : buf;
+
+                var reader = new StackDataReader(output);
+                m_Header1 = reader.ReadInt32LE();
+                m_Header2 = reader.ReadInt16LE();
+
+                while (reader.Remaining > 0)
                 {
-                    int number = bin.ReadInt32();
-                    byte flag = bin.ReadByte();
-                    int length = bin.ReadInt16();
-
-                    if (length > m_Buffer.Length)
-                        m_Buffer = new byte[(length + 1023) & ~1023];
-
-                    bin.Read(m_Buffer, 0, length);
-                    string text = Encoding.UTF8.GetString(m_Buffer, 0, length);
-
-                    StringEntry se = new StringEntry(number, text, flag);
-                    Entries.Add(se);
+                    var number = reader.ReadInt32LE();
+                    var flag = reader.ReadUInt8();
+                    var length = reader.ReadInt16LE();
+                    var text = string.Intern(reader.ReadUTF8(length));
 
                     m_StringTable[number] = text;
+                    StringEntry se = new StringEntry(number, text, flag);
+                    Entries.Add(se);
                     m_EntryTable[number] = se;
+
                 }
             }
         }

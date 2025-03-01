@@ -5,6 +5,12 @@ using System.IO;
 
 namespace Ultima
 {
+    public sealed class FilesDirectoryOverride
+    {
+        public static string Directory { get; set; }
+
+    }
+
     public sealed class Files
     {
         public delegate void FileSaveHandler();
@@ -22,6 +28,7 @@ namespace Ultima
         private static Dictionary<string, string> m_MulPath;
         private static string m_Directory;
         private static string m_RootDir;
+
 
         /// <summary>
         /// Should loaded Data be cached
@@ -55,7 +62,7 @@ namespace Ultima
         /// Contains the rootDir (so relative values are possible for <see cref="MulPath"/>
         /// </summary>
         public static string RootDir { get { return m_RootDir; } set { m_RootDir = value; } }
-
+        internal static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
         private static string[] m_Files = new string[]
         {
             "anim.idx",
@@ -203,10 +210,17 @@ namespace Ultima
             foreach (string file in m_Files)
             {
                 string filePath = Path.Combine(m_RootDir, file);
-                if (File.Exists(filePath))
-                    m_MulPath[file] = file;
-                else
+                try
+                {
+                    filePath = GetCaseInsensitiveFilePath(filePath);
+                    m_MulPath[file] = filePath;
+                }
+                catch (Exception)
+                {
                     m_MulPath[file] = "";
+                    logger.Debug($"file={file} not found in file system");
+                }
+
             }
         }
 
@@ -251,6 +265,33 @@ namespace Ultima
         {
             MulPath[key] = path;
         }
+        public static string GetCaseInsensitiveFilePath(string filePath)
+        {
+            string directry = Path.GetDirectoryName(filePath);
+            string fileName = Path.GetFileName(filePath);
+
+            if (string.IsNullOrEmpty(directry) || string.IsNullOrEmpty(fileName))
+            {
+                throw new ArgumentException("Invalid file path");
+            }
+
+            try
+            {
+                foreach (var f in System.IO.Directory.GetFiles(directry))
+                {
+                    if (string.Equals(Path.GetFileName(f), fileName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return f;
+                    }
+                }
+
+                throw new FileNotFoundException($"File not found: {filePath}");
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error accessing directory: {ex.Message}");
+            }
+        }
 
         /// <summary>
         /// Looks up a given <paramref name="file" /> in <see cref="Files.MulPath"/>
@@ -262,13 +303,24 @@ namespace Ultima
             {
                 string path = "";
                 if (MulPath.ContainsKey(file.ToLower()))
+                {
                     path = MulPath[file.ToLower()];
+                }
                 if (String.IsNullOrEmpty(path))
                     return null;
                 if (String.IsNullOrEmpty(Path.GetDirectoryName(path)))
+                {
                     path = Path.Combine(m_RootDir, path);
-                if (File.Exists(path))
+                }
+                try
+                {
+                    path = GetCaseInsensitiveFilePath(path);
                     return path;
+                }
+                catch (Exception)
+                {
+                    logger.Debug($"{path} not found in GetFilePath");
+                }
             }
 
             return null;
@@ -307,6 +359,10 @@ namespace Ultima
 
         private static string LoadDirectory()
         {
+            if (!string.IsNullOrEmpty(FilesDirectoryOverride.Directory))
+            {
+                return FilesDirectoryOverride.Directory;
+            }
             string dir = null;
             for (int i = knownRegkeys.Length - 1; i >= 0; i--)
             {
@@ -451,17 +507,17 @@ namespace Ultima
         {
             if (Files.GetFilePath("map1.mul") != null)
             {
-                if (Ultima.Map.Trammel.Width == 7168)
-                    Ultima.Map.Trammel = new Ultima.Map(1, 1, 7168, 4096);
+                if (Map.Trammel.Width == 7168)
+                    Map.Trammel = new Map(1, 1, 7168, 4096);
                 else
-                    Ultima.Map.Trammel = new Ultima.Map(1, 1, 6144, 4096);
+                    Map.Trammel = new Map(1, 1, 6144, 4096);
             }
             else
             {
-                if (Ultima.Map.Trammel.Width == 7168)
-                    Ultima.Map.Trammel = new Ultima.Map(0, 1, 7168, 4096);
+                if (Map.Trammel.Width == 7168)
+                    Map.Trammel = new Map(0, 1, 7168, 4096);
                 else
-                    Ultima.Map.Trammel = new Ultima.Map(0, 1, 6144, 4096);
+                    Map.Trammel = new Map(0, 1, 6144, 4096);
             }
         }
     }

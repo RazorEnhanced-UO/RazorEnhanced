@@ -89,7 +89,7 @@ namespace Ultima
             }
             const string pattern = @"(?<!\{)(?>\{\{)*\{\d(.*?)";
             var matches = Regex.Matches(m_FmtTxt, pattern);
-//            var totalMatchCount = matches.Count;
+            //            var totalMatchCount = matches.Count;
             var uniqueMatchCount = matches.OfType<Match>().Select(m => m.Value).Distinct().Count();
             var parameterMatchCount = (uniqueMatchCount == 0) ? 0 : matches.OfType<Match>().Select(m => m.Value).Distinct().Select(m => int.Parse(m.Replace("{", string.Empty))).Max() + 1;
             int addEmpty = parameterMatchCount - list.Count;
@@ -100,7 +100,7 @@ namespace Ultima
                     list.Add("");
                 }
             }
-            
+
             string result = String.Format(m_FmtTxt, list.ToArray());
             return result;
         }
