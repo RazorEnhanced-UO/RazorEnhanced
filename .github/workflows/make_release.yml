@@ -97,6 +97,80 @@ jobs:
         draft: false
         prerelease: false
 
+    # Set upload URL based on whether release was created or already existed
+    - name: Set upload URL
+      id: set_upload_url
+      run: |
+        if ("${{ steps.check_release.outputs.exists }}" -eq "true") {
+          "upload_url=https://uploads.github.com/repos/${{ github.repository }}/releases/${{ steps.check_release.outputs.release_id }}/assets{?name,label}" >> $env:GITHUB_OUTPUT
+        } else {
+          "upload_url=${{ steps.create_release.outputs.upload_url }}" >> $env:GITHUB_OUTPUT
+        }
+      shell: pwsh
+        
+    # Delete existing asset if it exists (for updates)
+    - name: Delete existing asset
+      if: steps.check_release.outputs.exists == 'true'
+      run: |
+        $headers = @{
+          Authorization = "token ${{ secrets.GITHUB_TOKEN }}"
+          Accept = "application/vnd.github.v3+json"
+        }
+        
+        # Get assets for the release
+        $assetsUrl = "https://api.github.com/repos/${{ github.repository }}/releases/${{ steps.check_release.outputs.release_id }}/assets"
+        $assets = Invoke-RestMethod -Uri $assetsUrl -Method Get -Headers $headers
+        
+        # Find matching asset
+        $assetName = "RazorEnhanced-${{ steps.get_version.outputs.version }}.zip"
+        $asset = $assets | Where-Object { $_.name -eq $assetName }
+        
+        if ($asset) {
+          Write-Host "Found existing asset with ID: $($asset.id). Deleting it..."
+          Invoke-RestMethod -Uri "https://api.github.com/repos/${{ github.repository }}/releases/assets/$($asset.id)" -Method Delete -Headers $headers
+          Write-Host "Asset deleted successfully"
+        } else {
+          Write-Host "No existing asset found to delete"
+        }
+      shell: pwsh
+
+    # Set upload URL based on whether release was created or already existed
+    - name: Set upload URL
+      id: set_upload_url
+      run: |
+        if ("${{ steps.check_release.outputs.exists }}" -eq "true") {
+          "upload_url=https://uploads.github.com/repos/${{ github.repository }}/releases/${{ steps.check_release.outputs.release_id }}/assets{?name,label}" >> $env:GITHUB_OUTPUT
+        } else {
+          "upload_url=${{ steps.create_release.outputs.upload_url }}" >> $env:GITHUB_OUTPUT
+        }
+      shell: pwsh
+        
+    # Delete existing asset if it exists (for updates)
+    - name: Delete existing asset
+      if: steps.check_release.outputs.exists == 'true'
+      run: |
+        $headers = @{
+          Authorization = "token ${{ secrets.GITHUB_TOKEN }}"
+          Accept = "application/vnd.github.v3+json"
+        }
+        
+        # Get assets for the release
+        $assetsUrl = "https://api.github.com/repos/${{ github.repository }}/releases/${{ steps.check_release.outputs.release_id }}/assets"
+        $assets = Invoke-RestMethod -Uri $assetsUrl -Method Get -Headers $headers
+        
+        # Find matching asset
+        $assetName = "RazorEnhanced-${{ steps.get_version.outputs.version }}.zip"
+        $asset = $assets | Where-Object { $_.name -eq $assetName }
+        
+        if ($asset) {
+          Write-Host "Found existing asset with ID: $($asset.id). Deleting it..."
+          Invoke-RestMethod -Uri "https://api.github.com/repos/${{ github.repository }}/releases/assets/$($asset.id)" -Method Delete -Headers $headers
+          Write-Host "Asset deleted successfully"
+        } else {
+          Write-Host "No existing asset found to delete"
+        }
+      shell: pwsh
+
     # Upload the zip file as a release asset
     - name: Upload Release Asset
       uses: actions/upload-release-asset@v1
