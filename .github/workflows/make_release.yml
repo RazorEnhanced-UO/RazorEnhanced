@@ -84,37 +84,8 @@ jobs:
         recursive: true
         dest: RazorEnhanced-${{ steps.get_version.outputs.version }}.zip
 
-    # Create or update tag first
-    - name: Create Tag
-      run: |
-        # Set git identity for local operations
-        git config --global user.name "GitHub Actions Bot"
-        git config --global user.email "actions@github.com"
-        
-        # Get current commit SHA
-        $commitSha = $(git rev-parse HEAD)
-        
-        # Tag name with v prefix
-        $tag = "v${{ steps.get_version.outputs.version }}"
-        
-        # Proper PowerShell conditional check
-        if ("${{ steps.checkTag.outputs.exists }}" -eq "true") {
-          Write-Host "Tag $tag already exists. Updating it to latest commit."
-          
-          # Delete the existing tag locally and remotely
-          git tag -d $tag
-          git push --delete origin $tag
-        } else {
-          Write-Host "Tag $tag does not exist. Creating a new tag."
-        }
-        
-        # Create local tag
-        git tag $tag
-        git push origin $tag
-        
-        Write-Host "Tag created and pushed successfully: $tag"
-      shell: pwsh
-
+    # Never create tag on non release branch
+    
     # Now check if release exists after ensuring tag exists
     - name: Check if release exists
       id: check_release
