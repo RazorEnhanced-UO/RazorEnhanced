@@ -1,0 +1,80 @@
+name: autobuild
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ release/0.8 ]
+  
+env:
+  SOLUTION_FILE_PATH: .
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  DEPLOYMENT_TOKEN: ${{ secrets.DEPLOYMENT_TOKEN }}
+  BUILD_CONFIGURATION: Debug
+  
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:         
+    - uses: actions/checkout@v3   
+    
+    - name: Grab Version
+      id: get_version
+      shell: powershell
+      run: |
+        # Read the file content
+        $fileContent = Get-Content -Path Razor/Properties/AssemblyInfo.cs
+        
+        # Filter out comment lines and look for version
+        $versionLine = $fileContent | Where-Object { $_ -notmatch '^\s*//' } | Select-String -Pattern 'AssemblyVersion\("([\d\.\w]+)"\)' | Select-Object -First 1
+        
+        if ($versionLine) {
+          $version = $versionLine.Matches.Groups[1].Value
+        } else {
+          # Try alternative attribute format if first attempt fails
+          $versionLine = $fileContent | Where-Object { $_ -notmatch '^\s*//' } | Select-String -Pattern 'AssemblyVersionAttribute\("([\d\.\w]+)"\)' | Select-Object -First 1
+          if ($versionLine) {
+            $version = $versionLine.Matches.Groups[1].Value
+          } else {
+            Write-Error "Could not find version information in AssemblyInfo.cs"
+            exit 1
+          }
+        }
+        
+        Write-Host "Found version: $version"
+        "version=$version" >> $env:GITHUB_OUTPUT
+        
+        # Generate the download URL and store it as an output
+        $downloadUrl = "https://github.com/RazorEnhanced/RazorEnhanced/releases/download/v${version}/RazorEnhanced-${version}.zip"
+        "download_url=$downloadUrl" >> $env:GITHUB_OUTPUT
+        Write-Host "Download URL: $downloadUrl"
+    
+    - name: Show Version
+      run: echo "${{steps.get_version.outputs.version}}"
+      
+    - name: GitHub Tag Exists
+      uses: mukunku/tag-exists-action@v1.2.0
+      id: checkTag
+      with: 
+        tag: "v${{steps.get_version.outputs.version}}"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
+        
+    - name: Show Tag Existence Result
+      run: echo ${{ steps.checkTag.outputs.exists }}
+    
+    # Build steps  
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v1.1
+      
+    - name: Display MSBuild version
+      run: msbuild -version
+      
+    - name: Restore NuGet packages
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: nuget restore ${{env.SOLUTION_FILE_PATH}}
+      
+    - name: Build
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}}
+
